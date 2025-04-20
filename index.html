@@ -3,47 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kvantedyr</title>
+    <title>Kvantedyr - Simpel Fuldskærm</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000000; touch-action: manipulation; position: relative; }
-        canvas { display: block; touch-action: manipulation; position: absolute; top: 0; left: 0; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000000; 
+            touch-action: manipulation; 
+        }
+        #canvas-container { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #fullscreen-text {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: #39FF14;
+            font-family: Arial, sans-serif;
+            cursor: pointer;
+            z-index: 1000;
+            padding: 5px;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
+    <div id="canvas-container"></div>
+    <div id="fullscreen-text">Fuldskærm</div>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
     <script>
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        const simplex = new SimplexNoise();
-        const screamingGreen = new THREE.Color(0x39FF14);
+        // Fuldskærm elementer
+        const fullscreenButton = document.getElementById('fullscreen-text');
+        const container = document.getElementById('canvas-container');
         
-        // Fuldskærmshåndtering
-        let isFullscreen = false;
-        let fullscreenButton; // 3D knap til fuldskærm
-        
-        function toggleFullScreen() {
+        // Håndter fuldskærm med klik-begivenhed
+        fullscreenButton.addEventListener('click', function() {
             if (!document.fullscreenElement) {
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen();
-                } else if (document.documentElement.webkitRequestFullscreen) {
-                    document.documentElement.webkitRequestFullscreen();
-                } else if (document.documentElement.msRequestFullscreen) {
-                    document.documentElement.msRequestFullscreen();
-                } else if (document.documentElement.mozRequestFullScreen) {
-                    document.documentElement.mozRequestFullScreen();
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) { 
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) { 
+                    container.msRequestFullscreen();
+                } else if (container.mozRequestFullScreen) {
+                    container.mozRequestFullScreen();
                 }
-                isFullscreen = true;
-                if (fullscreenButton) {
-                    fullscreenButton.visible = false;
-                }
+                fullscreenButton.style.display = 'none';
             }
-        }
+        });
         
         // Lyt til fuldskærmsændringer
         document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -52,14 +65,24 @@
         document.addEventListener('MSFullscreenChange', handleFullscreenChange);
         
         function handleFullscreenChange() {
-            isFullscreen = Boolean(document.fullscreenElement || 
-                                document.webkitFullscreenElement || 
-                                document.mozFullScreenElement || 
-                                document.msFullscreenElement);
-            if (fullscreenButton) {
-                fullscreenButton.visible = !isFullscreen;
+            if (!document.fullscreenElement && 
+                !document.webkitFullscreenElement && 
+                !document.mozFullScreenElement && 
+                !document.msFullscreenElement) {
+                fullscreenButton.style.display = 'block';
             }
         }
+        
+        // Opsætning af scene og renderer
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        const simplex = new SimplexNoise();
+        const screamingGreen = new THREE.Color(0x39FF14);
         
         function createWildOrganicGeometry(radius, detail, time, additionalNoise = 0) {
             const geometry = new THREE.IcosahedronGeometry(radius, 6);
@@ -98,38 +121,6 @@
                 0.8 + 0.2 * Math.sin(t * 16 + 2), 
                 0.1 + 0.1 * Math.sin(t * 16 + 4)
             );
-        }
-
-        // Opret fuldskærmsknap
-        function createFullscreenButton() {
-            const size = 1.0; // Større for at være let at ramme
-            const geometry = createWildOrganicGeometry(size, null, Math.random() * 10);
-            const material = new THREE.MeshPhysicalMaterial({
-                color: screamingGreen,
-                transparent: true,
-                opacity: 0.9,
-                roughness: 0.7,
-                metalness: 0.0,
-                clearcoat: 0.1,
-                clearcoatRoughness: 0.9,
-                reflectivity: 0.2,
-                emissive: screamingGreen,
-                emissiveIntensity: 1.0, // Lyser mere
-                side: THREE.DoubleSide
-            });
-            const button = new THREE.Mesh(geometry, material);
-            
-            // Placering i øverste højre hjørne i kameraets synsfelt
-            button.position.set(6, 4, 0);
-            
-            button.userData = {
-                isFullscreenButton: true,
-                timeOffset: Math.random() * 10,
-                pulseIntensity: 0.3 // Ekstra pulsering
-            };
-            
-            scene.add(button);
-            return button;
         }
 
         const objects = [];
@@ -177,9 +168,6 @@
             ));
         }
 
-        // Opret fuldskærmsknappen
-        fullscreenButton = createFullscreenButton();
-
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
@@ -208,10 +196,6 @@
         
         const virtualCopies = [];
         const maxVirtualCopies = 15; 
-        
-        // Raycasting for fuldskærmsknap
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
         
         function updateRandomTargets() {
             if (Math.random() < 0.1) {
@@ -389,27 +373,6 @@
             
             updateRandomTargets();
             updateVirtualCopies();
-            
-            // Opdater fuldskærmsknappen
-            if (fullscreenButton && fullscreenButton.visible) {
-                fullscreenButton.geometry.dispose();
-                const buttonTime = time + fullscreenButton.userData.timeOffset;
-                fullscreenButton.geometry = createWildOrganicGeometry(
-                    1.0, 
-                    null, 
-                    buttonTime
-                );
-                
-                // Lad knappen rotere og pulsere
-                fullscreenButton.rotation.x += 0.01;
-                fullscreenButton.rotation.y += 0.01;
-                
-                const pulseScale = 1 + fullscreenButton.userData.pulseIntensity * Math.sin(time * 2.0);
-                fullscreenButton.scale.set(pulseScale, pulseScale, pulseScale);
-                
-                // Intensiteten pulserer også
-                fullscreenButton.material.emissiveIntensity = 0.8 + 0.4 * Math.sin(time * 3.0);
-            }
 
             if (isInteracting) {
                 interactionX += (targetInteractionX - interactionX) * 0.95;
@@ -526,19 +489,11 @@
 
         function onMouseMove(event) {
             updateInteractionPosition(event.clientX, event.clientY);
-            
-            // Opdater mus-position til raycasting
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         }
 
         function onTouchMove(event) {
             if (event.touches.length > 0) {
                 updateInteractionPosition(event.touches[0].clientX, event.touches[0].clientY);
-                
-                // Opdater mus-position til raycasting
-                mouse.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
             }
         }
 
@@ -547,22 +502,6 @@
         }
 
         function onClick(event) {
-            // Opdater mus-position til raycasting
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            
-            raycaster.setFromCamera(mouse, camera);
-            
-            // Tjek om fuldskærmsknappen blev ramt
-            if (fullscreenButton && fullscreenButton.visible) {
-                const intersects = raycaster.intersectObject(fullscreenButton);
-                if (intersects.length > 0) {
-                    toggleFullScreen();
-                    return;
-                }
-            }
-            
-            // Hvis ikke fuldskærmsknap, så fortsæt med normal klik-håndtering
             const interactionVector = new THREE.Vector3(interactionX * 10, interactionY * 10, 0);
             
             objects.forEach(obj => {
@@ -586,54 +525,12 @@
             });
         }
 
-        function onTouchStart(event) {
-            if (event.touches.length > 0) {
-                // Opdater mus-position til raycasting
-                mouse.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
-                
-                raycaster.setFromCamera(mouse, camera);
-                
-                // Tjek om fuldskærmsknappen blev ramt
-                if (fullscreenButton && fullscreenButton.visible) {
-                    const intersects = raycaster.intersectObject(fullscreenButton);
-                    if (intersects.length > 0) {
-                        toggleFullScreen();
-                        return;
-                    }
-                }
-                
-                // Hvis ikke fuldskærmsknap, så fortsæt med normal tryk-håndtering
-                const interactionVector = new THREE.Vector3(interactionX * 10, interactionY * 10, 0);
-                
-                objects.forEach(obj => {
-                    const distanceToInteraction = obj.position.distanceTo(interactionVector);
-                    if (distanceToInteraction < 3) {
-                        for (let i = 0; i < 3; i++) {
-                            if (virtualCopies.length < maxVirtualCopies) {
-                                const targetIndex = Math.floor(Math.random() * objects.length);
-                                const targetPos = objects[targetIndex].position.clone();
-                                
-                                const virtualCopy = createVirtualCopy(obj, targetPos);
-                                virtualCopies.push(virtualCopy);
-                            }
-                        }
-                        
-                        obj.material.emissiveIntensity = 1.5;
-                        setTimeout(() => {
-                            obj.material.emissiveIntensity = 0.7;
-                        }, 300);
-                    }
-                });
-            }
-        }
-
         document.addEventListener('mousemove', onMouseMove, { passive: true });
         document.addEventListener('touchmove', onTouchMove, { passive: true });
         document.addEventListener('mouseup', onInteractionEnd, { passive: true });
         document.addEventListener('touchend', onInteractionEnd, { passive: true });
         document.addEventListener('click', onClick, { passive: true });
-        document.addEventListener('touchstart', onTouchStart, { passive: true });
+        document.addEventListener('touchstart', onClick, { passive: true });
 
         window.addEventListener('resize', onWindowResize, false);
 
